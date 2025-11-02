@@ -90,37 +90,7 @@ func main() {
         _, err := sqlblade.InsertTx(tx, user).Execute(ctx)
         return err
     })
-}
 ```
-
-## 🔧 Development
-
-### Local Development Setup
-
-1. **Install dependencies:**
-   ```bash
-   go mod download
-   ```
-
-2. **Install development tools:**
-   ```bash
-   make install-tools
-   ```
-
-3. **Run linters locally:**
-   ```bash
-   make lint
-   ```
-
-4. **Run tests:**
-   ```bash
-   make test
-   ```
-
-5. **Run all checks (lint + test):**
-   ```bash
-   make check
-   ```
 
 ## 📚 Examples
 

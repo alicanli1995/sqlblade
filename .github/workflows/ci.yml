@@ -2,11 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
     tags:
-      - 'v*'  # Trigger on version tags (v1.0.0, v0.1.0, etc.)
-  pull_request:
-    branches: [ main, master ]
+      - 'v*'  # Trigger only on version tags (v1.0.0, v0.1.0, etc.)
   release:
     types: [ created ]
 
