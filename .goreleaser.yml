@@ -7,19 +7,6 @@ project_name: sqlblade
 builds:
   - skip: true  # Skip binary builds for library
 
-# Skip Docker, Snapshot, Homebrew, Scoop since this is a library
-dockers:
-  skip: true
-
-snapcrafts:
-  skip: true
-
-brews:
-  skip: true
-
-scoops:
-  skip: true
-
 # GitHub release
 release:
   github:
@@ -48,12 +35,4 @@ changelog:
       - Merge branch
 
 # For libraries, we mainly need the release and changelog
-# No need for archives or checksums for a library
-archives:
-  skip: true
-
-checksum:
-  skip: true
-
-# Publish to pkg.go.dev is automatic when tag is pushed
-
+# Archives and checksums are skipped by not including them
