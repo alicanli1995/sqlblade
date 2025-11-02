@@ -1,5 +1,4 @@
 # golangci-lint Configuration
-version: 2
 
 linters:
   # Enable all linters
@@ -34,6 +33,7 @@ linters:
     - ireturn          # Generic interfaces are acceptable
     - cyclop           # Keep gocyclo instead
     - mnd              # Magic numbers are acceptable with constants
+    - stylecheck       # Package comments are optional
 
 linters-settings:
   errcheck:
@@ -112,9 +112,4 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-
-output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
 
