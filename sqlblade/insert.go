@@ -232,5 +232,9 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		result, execErr = ib.db.ExecContext(ctx, sqlStr, args...)
 	}
 
-	return result, execErr
+	if execErr != nil {
+		return nil, wrapQueryError(execErr, sqlStr, args)
+	}
+
+	return result, nil
 }

@@ -3,10 +3,12 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"strings"
 )
 
-// Aggregate functions
+// AggregateFunc Aggregate functions
 type AggregateFunc string
 
 const (
@@ -139,10 +141,10 @@ func (qb *QueryBuilder[T]) aggregate(ctx context.Context, fn AggregateFunc, colu
 	var result interface{}
 	err := row.Scan(&result)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, ErrNoRows
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%w (table: %s)", ErrNoRows, qb.tableName)
 		}
-		return nil, err
+		return nil, wrapQueryError(err, sqlStr, args)
 	}
 
 	return result, nil

@@ -2,6 +2,7 @@ package sqlblade
 
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -67,7 +68,7 @@ func scanRowsOptimized[T any](rows *sql.Rows) ([]T, error) {
 		ptrVal := reflect.ValueOf(&val).Elem()
 
 		if err := rows.Scan(scanPtrs...); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("sqlblade: failed to scan row: %w", err)
 		}
 
 		for _, field := range info.fields {
@@ -90,7 +91,7 @@ func scanRowsOptimized[T any](rows *sql.Rows) ([]T, error) {
 			}
 
 			if err := setFieldValue(fieldVal, scanVal, field.fieldType); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("sqlblade: failed to set field %s: %w", field.name, err)
 			}
 		}
 

@@ -3,6 +3,7 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 // WithTransaction executes a function within a database transaction
@@ -14,12 +15,20 @@ func WithTransaction(db *sql.DB, fn func(*sql.Tx) error) error {
 
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			err := tx.Rollback()
+			if err != nil {
+				fmt.Printf("transaction rollback failed: %v\n", err)
+				return
+			}
 			panic(p)
 		} else if err != nil {
-			tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				err = fmt.Errorf("transaction rollback failed: %w (original error: %v)", rbErr, err)
+			}
 		} else {
-			err = tx.Commit()
+			if commitErr := tx.Commit(); commitErr != nil {
+				err = fmt.Errorf("%w: %v", ErrTransactionCommit, commitErr)
+			}
 		}
 	}()
 
@@ -36,16 +45,22 @@ func WithTransactionContext(ctx context.Context, db *sql.DB, fn func(*sql.Tx) er
 
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			err := tx.Rollback()
+			if err != nil {
+				return
+			}
 			panic(p)
 		} else if err != nil {
-			tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				err = fmt.Errorf("transaction rollback failed: %w (original error: %v)", rbErr, err)
+			}
 		} else {
-			err = tx.Commit()
+			if commitErr := tx.Commit(); commitErr != nil {
+				err = fmt.Errorf("%w: %v", ErrTransactionCommit, commitErr)
+			}
 		}
 	}()
 
 	err = fn(tx)
 	return err
 }
-

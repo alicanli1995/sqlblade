@@ -156,9 +156,11 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		if stmtErr == nil {
 			result, err = stmt.ExecContext(ctx, args...)
 			if err == nil {
-				return result, err
+				return result, nil
 			}
+			return nil, wrapQueryError(err, sqlStr, args)
 		}
+		return nil, wrapQueryError(stmtErr, sqlStr, args)
 	}
 
 	if ub.tx != nil {
@@ -167,5 +169,9 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		result, err = ub.db.ExecContext(ctx, sqlStr, args...)
 	}
 
-	return result, err
+	if err != nil {
+		return nil, wrapQueryError(err, sqlStr, args)
+	}
+
+	return result, nil
 }

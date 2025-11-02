@@ -3,6 +3,7 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
@@ -62,9 +63,14 @@ func (rq *RawQuery[T]) Execute(ctx context.Context) ([]T, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, wrapQueryError(err, rq.query, rq.args)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("failed to close rows:", err)
+		}
+	}(rows)
 
 	return scanRows[T](rows)
 }
@@ -88,8 +94,18 @@ func (rq *RawQuery[T]) Exec(ctx context.Context) (sql.Result, error) {
 		return nil, ErrNilContext
 	}
 
+	var result sql.Result
+	var err error
+
 	if rq.tx != nil {
-		return rq.tx.ExecContext(ctx, rq.query, rq.args...)
+		result, err = rq.tx.ExecContext(ctx, rq.query, rq.args...)
+	} else {
+		result, err = rq.db.ExecContext(ctx, rq.query, rq.args...)
 	}
-	return rq.db.ExecContext(ctx, rq.query, rq.args...)
+
+	if err != nil {
+		return nil, wrapQueryError(err, rq.query, rq.args)
+	}
+
+	return result, nil
 }

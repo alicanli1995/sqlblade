@@ -63,7 +63,10 @@ func (sc *stmtCache) clear() {
 	defer sc.mu.Unlock()
 
 	for _, stmt := range sc.store {
-		stmt.Close()
+		err := stmt.Close()
+		if err != nil {
+			return
+		}
 	}
 	sc.store = make(map[string]*sql.Stmt)
 }

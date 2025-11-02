@@ -3,6 +3,7 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -298,10 +299,17 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 		if stmtErr == nil {
 			rows, err = stmt.QueryContext(ctx, args...)
 			if err == nil {
-				defer rows.Close()
+				defer func(rows *sql.Rows) {
+					err := rows.Close()
+					if err != nil {
+						fmt.Println("failed to close rows:", err)
+					}
+				}(rows)
 				return scanRowsOptimized[T](rows)
 			}
+			return nil, wrapQueryError(err, sqlStr, args)
 		}
+		return nil, wrapQueryError(stmtErr, sqlStr, args)
 	}
 
 	if qb.tx != nil {
@@ -311,9 +319,14 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, wrapQueryError(err, sqlStr, args)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("failed to close rows:", err)
+		}
+	}(rows)
 
 	return scanRowsOptimized[T](rows)
 }
@@ -326,7 +339,7 @@ func (qb *QueryBuilder[T]) First(ctx context.Context) (T, error) {
 		return zero, err
 	}
 	if len(results) == 0 {
-		return zero, ErrNoRows
+		return zero, fmt.Errorf("%w (table: %s)", ErrNoRows, qb.tableName)
 	}
 	return results[0], nil
 }

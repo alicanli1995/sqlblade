@@ -134,5 +134,9 @@ func (db *DeleteBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		result, err = db.db.ExecContext(ctx, sqlStr, args...)
 	}
 
-	return result, err
+	if err != nil {
+		return nil, wrapQueryError(err, sqlStr, args)
+	}
+
+	return result, nil
 }

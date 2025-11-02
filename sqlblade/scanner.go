@@ -2,6 +2,7 @@ package sqlblade
 
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -103,21 +104,11 @@ func scanRows[T any](rows *sql.Rows) ([]T, error) {
 	return scanRowsOptimized[T](rows)
 }
 
-// scanRow scans a single database row into type T
-func scanRow[T any](rows *sql.Rows) (T, error) {
-	var zero T
-	results, err := scanRows[T](rows)
-	if err != nil {
-		return zero, err
-	}
-	if len(results) == 0 {
-		return zero, ErrNoRows
-	}
-	return results[0], nil
-}
-
 // setFieldValue sets a value to a struct field with type conversion
 func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Type) error {
+	if !field.CanSet() {
+		return fmt.Errorf("sqlblade: field cannot be set")
+	}
 	val := reflect.ValueOf(value)
 
 	if !val.IsValid() {
