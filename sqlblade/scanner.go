@@ -47,15 +47,22 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 		fields: make([]fieldInfo, 0),
 	}
 
-	if _, ok := typ.MethodByName("TableName"); ok {
+	structTypeName := typ.String()
+	if cachedTableName, ok := globalTableNameCache.get(structTypeName); ok {
+		info.tableName = cachedTableName
+	} else if _, ok := typ.MethodByName("TableName"); ok {
 		val := reflect.New(typ).Interface()
 		if tableNamer, ok := val.(interface{ TableName() string }); ok {
-			info.tableName = tableNamer.TableName()
+			tableName := tableNamer.TableName()
+			info.tableName = tableName
+			globalTableNameCache.set(structTypeName, tableName)
 		}
 	}
 
 	if info.tableName == "" {
-		info.tableName = toSnakeCase(typ.Name())
+		tableName := toSnakeCase(typ.Name())
+		info.tableName = tableName
+		globalTableNameCache.set(structTypeName, tableName)
 	}
 
 	for i := 0; i < typ.NumField(); i++ {
@@ -72,6 +79,7 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 
 		parts := strings.Split(dbTag, ",")
 		columnName := parts[0]
+		columnNameLower := strings.ToLower(columnName)
 
 		fieldType := field.Type
 		isPtr := fieldType.Kind() == reflect.Ptr
@@ -81,7 +89,7 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 
 		info.fields = append(info.fields, fieldInfo{
 			name:      field.Name,
-			dbColumn:  columnName,
+			dbColumn:  columnNameLower,
 			index:     i,
 			isPtr:     isPtr,
 			fieldType: fieldType,
@@ -108,11 +116,42 @@ func scanRows[T any](rows *sql.Rows) ([]T, error) {
 	return scanRowsOptimized[T](rows)
 }
 
-// setFieldValue sets a value to a struct field with type conversion
 func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Type) error {
 	if !field.CanSet() {
 		return fmt.Errorf("sqlblade: field cannot be set")
 	}
+	if val, ok := value.(int64); ok {
+		if field.Kind() == reflect.Int64 {
+			field.SetInt(val)
+			return nil
+		}
+		if field.Kind() == reflect.Int && val >= -9223372036854775808 && val <= 9223372036854775807 {
+			field.SetInt(val)
+			return nil
+		}
+	}
+
+	if val, ok := value.(float64); ok {
+		if field.Kind() == reflect.Float64 {
+			field.SetFloat(val)
+			return nil
+		}
+		if field.Kind() == reflect.Float32 {
+			field.SetFloat(val)
+			return nil
+		}
+	}
+
+	if val, ok := value.(string); ok && field.Kind() == reflect.String {
+		field.SetString(val)
+		return nil
+	}
+
+	if val, ok := value.(bool); ok && field.Kind() == reflect.Bool {
+		field.SetBool(val)
+		return nil
+	}
+
 	val := reflect.ValueOf(value)
 
 	if !val.IsValid() {

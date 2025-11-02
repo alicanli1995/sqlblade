@@ -1,0 +1,107 @@
+package sqlblade
+
+import (
+	"sync"
+	"unsafe"
+)
+
+func stringToBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&struct {
+		string
+		cap int
+	}{s, len(s)}))
+}
+
+// bytesToString converts bytes to string without allocation
+func bytesToString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+// ScanBufferPool provides reusable scan buffers to reduce allocations
+type ScanBufferPool struct {
+	pool *sync.Pool
+}
+
+var globalScanBufferPool = &ScanBufferPool{
+	pool: &sync.Pool{
+		New: func() interface{} {
+			return &scanBuffer{
+				values: make([]interface{}, 0, 16),
+				ptrs:   make([]interface{}, 0, 16),
+			}
+		},
+	},
+}
+
+type scanBuffer struct {
+	values []interface{}
+	ptrs   []interface{}
+}
+
+func (sbp *ScanBufferPool) Get(size int) *scanBuffer {
+	buf := sbp.pool.Get().(*scanBuffer)
+	if cap(buf.values) < size {
+		buf.values = make([]interface{}, size)
+		buf.ptrs = make([]interface{}, size)
+	} else {
+		buf.values = buf.values[:size]
+		buf.ptrs = buf.ptrs[:size]
+	}
+	for i := range buf.values {
+		buf.ptrs[i] = &buf.values[i]
+	}
+	return buf
+}
+
+func (sbp *ScanBufferPool) Put(buf *scanBuffer) {
+	for i := range buf.values {
+		buf.values[i] = nil
+	}
+	sbp.pool.Put(buf)
+}
+
+// FastIntToString converts int to string without fmt.Sprintf overhead
+func fastIntToString(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	var buf [20]byte
+	i := len(buf) - 1
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	for n > 0 {
+		buf[i] = byte('0' + n%10)
+		i--
+		n /= 10
+	}
+	if neg {
+		buf[i] = '-'
+		i--
+	}
+	return bytesToString(buf[i+1:])
+}
+
+// TableNameCache caches TableName() method results
+type tableNameCache struct {
+	mu    sync.RWMutex
+	cache map[string]string
+}
+
+var globalTableNameCache = &tableNameCache{
+	cache: make(map[string]string),
+}
+
+func (tnc *tableNameCache) get(structTypeName string) (string, bool) {
+	tnc.mu.RLock()
+	defer tnc.mu.RUnlock()
+	val, ok := tnc.cache[structTypeName]
+	return val, ok
+}
+
+func (tnc *tableNameCache) set(structTypeName, tableName string) {
+	tnc.mu.Lock()
+	defer tnc.mu.Unlock()
+	tnc.cache[structTypeName] = tableName
+}

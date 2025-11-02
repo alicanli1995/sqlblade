@@ -220,7 +220,7 @@ func (qb *QueryBuilder[T]) Offset(offset int) *QueryBuilder[T] {
 
 func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
 	var buf strings.Builder
-	buf.Grow(sqlBuilderBufferSize)
+	buf.Grow(selectBufferSize)
 	paramIndex := 0
 	args := make([]interface{}, 0, argsInitialCapacity)
 
@@ -294,12 +294,10 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 	sqlStr, args := qb.buildSQL()
 	startTime := time.Now()
 
-	// Execute before hooks
 	if err := DefaultHooks.ExecuteBeforeHooks(ctx, sqlStr, args); err != nil {
 		return nil, err
 	}
 
-	// Debug logging
 	if globalDebugger.enabled {
 		debugQuery := &DebugQuery{
 			SQL:       sqlStr,

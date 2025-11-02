@@ -154,7 +154,7 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 
 			columns = make([]string, 0, len(info.fields))
 			for _, field := range info.fields {
-				if strings.Contains(strings.ToLower(field.dbColumn), "id") {
+				if strings.Contains(field.dbColumn, "id") {
 					fieldVal := valRef.Field(field.index)
 					if fieldVal.IsValid() && fieldVal.IsZero() {
 						continue
@@ -171,6 +171,11 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	}
 
 	var buf strings.Builder
+	estimatedSize := insertBufferSize
+	if len(ib.values) > 1 {
+		estimatedSize = batchInsertBufferSize
+	}
+	buf.Grow(estimatedSize)
 	paramIndex := 0
 	var args []interface{}
 
@@ -185,6 +190,11 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	buf.WriteString(strings.Join(quotedCols, ", "))
 	buf.WriteString(") VALUES ")
 
+	fieldMap := make(map[string]int, len(info.fields))
+	for idx, field := range info.fields {
+		fieldMap[field.dbColumn] = idx
+	}
+
 	valueParts := make([]string, len(ib.values))
 	for i, val := range ib.values {
 		valRef := reflect.ValueOf(val)
@@ -193,18 +203,17 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		}
 
 		placeholders := make([]string, len(columns))
+
 		for j, col := range columns {
 			paramIndex++
 			placeholders[j] = ib.dialect.Placeholder(paramIndex)
 
 			var fieldValue interface{}
-			for _, field := range info.fields {
-				if field.dbColumn == col {
-					fieldVal := valRef.Field(field.index)
-					if fieldVal.IsValid() {
-						fieldValue = fieldVal.Interface()
-					}
-					break
+			colLower := strings.ToLower(col)
+			if fieldIdx, ok := fieldMap[colLower]; ok {
+				fieldVal := valRef.Field(fieldIdx)
+				if fieldVal.IsValid() {
+					fieldValue = fieldVal.Interface()
 				}
 			}
 			args = append(args, fieldValue)
@@ -226,7 +235,6 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	sqlStr := buf.String()
 	startTime := time.Now()
 
-	// Execute before hooks
 	if err := DefaultHooks.ExecuteBeforeHooks(ctx, sqlStr, args); err != nil {
 		return nil, err
 	}
@@ -234,7 +242,6 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	var result sql.Result
 	var execErr error
 
-	// Debug logging
 	if globalDebugger.enabled {
 		debugQuery := &DebugQuery{
 			SQL:       sqlStr,
@@ -265,7 +272,6 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		return nil, wrapQueryError(execErr, sqlStr, args)
 	}
 
-	// Execute after hooks
 	if hookErr := DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args); hookErr != nil {
 		log.Printf("after query hook error: %v", hookErr)
 	}

@@ -17,8 +17,43 @@ var columnMapCacheInst = &columnMapCache{
 	store: make(map[string]map[string]int),
 }
 
+// fastColumnKey generates a cache key faster than strings.Join
+func fastColumnKey(columns []string) string {
+	if len(columns) == 0 {
+		return ""
+	}
+	if len(columns) == 1 {
+		return columns[0]
+	}
+
+	// Pre-allocate buffer with approximate size
+	estimatedSize := len(columns) * 10
+	var buf strings.Builder
+	buf.Grow(estimatedSize)
+
+	for i, col := range columns {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		buf.WriteString(col)
+	}
+	return buf.String()
+}
+
+// toLowerCache caches lowercase conversions
+var toLowerCache = sync.Map{}
+
+func cachedToLower(s string) string {
+	if cached, ok := toLowerCache.Load(s); ok {
+		return cached.(string)
+	}
+	lower := strings.ToLower(s)
+	toLowerCache.Store(s, lower)
+	return lower
+}
+
 func (cmc *columnMapCache) getColumnMap(columns []string) map[string]int {
-	key := strings.Join(columns, ",")
+	key := fastColumnKey(columns)
 
 	cmc.mu.RLock()
 	if cached, ok := cmc.store[key]; ok {
@@ -29,7 +64,7 @@ func (cmc *columnMapCache) getColumnMap(columns []string) map[string]int {
 
 	columnMap := make(map[string]int, len(columns))
 	for i, col := range columns {
-		columnMap[strings.ToLower(col)] = i
+		columnMap[cachedToLower(col)] = i
 	}
 
 	cmc.mu.Lock()
@@ -57,22 +92,19 @@ func scanRowsOptimized[T any](rows *sql.Rows) ([]T, error) {
 
 	result = make([]T, 0, resultInitialCapacity)
 
-	scanValues := make([]interface{}, len(columns))
-	scanPtrs := make([]interface{}, len(columns))
-	for i := range scanValues {
-		scanPtrs[i] = &scanValues[i]
-	}
+	scanBuf := globalScanBufferPool.Get(len(columns))
+	defer globalScanBufferPool.Put(scanBuf)
 
 	for rows.Next() {
 		var val T
 		ptrVal := reflect.ValueOf(&val).Elem()
 
-		if err := rows.Scan(scanPtrs...); err != nil {
+		if err := rows.Scan(scanBuf.ptrs...); err != nil {
 			return nil, fmt.Errorf("sqlblade: failed to scan row: %w", err)
 		}
 
 		for _, field := range info.fields {
-			colIdx, ok := columnMap[strings.ToLower(field.dbColumn)]
+			colIdx, ok := columnMap[field.dbColumn]
 			if !ok {
 				continue
 			}
@@ -82,7 +114,7 @@ func scanRowsOptimized[T any](rows *sql.Rows) ([]T, error) {
 				continue
 			}
 
-			scanVal := scanValues[colIdx]
+			scanVal := scanBuf.values[colIdx]
 			if scanVal == nil {
 				if field.isPtr {
 					fieldVal.Set(reflect.Zero(fieldVal.Type()))

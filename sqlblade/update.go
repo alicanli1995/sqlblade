@@ -151,7 +151,6 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	sqlStr := buf.String()
 	startTime := time.Now()
 
-	// Execute before hooks
 	if err := DefaultHooks.ExecuteBeforeHooks(ctx, sqlStr, args); err != nil {
 		return nil, err
 	}
@@ -159,7 +158,6 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	var result sql.Result
 	var err error
 
-	// Debug logging
 	if globalDebugger.enabled {
 		debugQuery := &DebugQuery{
 			SQL:       sqlStr,
@@ -202,7 +200,6 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		return nil, wrapQueryError(err, sqlStr, args)
 	}
 
-	// Execute after hooks
 	if hookErr := DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args); hookErr != nil {
 		log.Printf("after query hook error: %v", hookErr)
 	}
