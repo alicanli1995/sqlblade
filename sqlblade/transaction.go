@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 )
 
 // WithTransaction executes a function within a database transaction
@@ -15,19 +16,19 @@ func WithTransaction(db *sql.DB, fn func(*sql.Tx) error) error {
 
 	defer func() {
 		if p := recover(); p != nil {
-			err := tx.Rollback()
-			if err != nil {
-				fmt.Printf("transaction rollback failed: %v\n", err)
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Printf("transaction rollback failed: %v", rollbackErr)
 				return
 			}
 			panic(p)
 		} else if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				err = fmt.Errorf("transaction rollback failed: %w (original error: %v)", rbErr, err)
+				err = fmt.Errorf("transaction rollback failed: %w (original error: %w)", rbErr, err)
 			}
 		} else {
 			if commitErr := tx.Commit(); commitErr != nil {
-				err = fmt.Errorf("%w: %v", ErrTransactionCommit, commitErr)
+				err = fmt.Errorf("%w: %w", ErrTransactionCommit, commitErr)
 			}
 		}
 	}()
@@ -45,18 +46,19 @@ func WithTransactionContext(ctx context.Context, db *sql.DB, fn func(*sql.Tx) er
 
 	defer func() {
 		if p := recover(); p != nil {
-			err := tx.Rollback()
-			if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Printf("transaction rollback failed: %v", rollbackErr)
 				return
 			}
 			panic(p)
 		} else if err != nil {
 			if rbErr := tx.Rollback(); rbErr != nil {
-				err = fmt.Errorf("transaction rollback failed: %w (original error: %v)", rbErr, err)
+				err = fmt.Errorf("transaction rollback failed: %w (original error: %w)", rbErr, err)
 			}
 		} else {
 			if commitErr := tx.Commit(); commitErr != nil {
-				err = fmt.Errorf("%w: %v", ErrTransactionCommit, commitErr)
+				err = fmt.Errorf("%w: %w", ErrTransactionCommit, commitErr)
 			}
 		}
 	}()

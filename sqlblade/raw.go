@@ -3,7 +3,7 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"log"
 
 	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
@@ -66,9 +66,9 @@ func (rq *RawQuery[T]) Execute(ctx context.Context) ([]T, error) {
 		return nil, wrapQueryError(err, rq.query, rq.args)
 	}
 	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-			fmt.Println("failed to close rows:", err)
+		closeErr := rows.Close()
+		if closeErr != nil {
+			log.Printf("failed to close rows: %v", closeErr)
 		}
 	}(rows)
 

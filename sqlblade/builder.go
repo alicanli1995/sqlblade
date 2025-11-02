@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -300,9 +301,9 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 			rows, err = stmt.QueryContext(ctx, args...)
 			if err == nil {
 				defer func(rows *sql.Rows) {
-					err := rows.Close()
-					if err != nil {
-						fmt.Println("failed to close rows:", err)
+					closeErr := rows.Close()
+					if closeErr != nil {
+						log.Printf("failed to close rows: %v", closeErr)
 					}
 				}(rows)
 				return scanRowsOptimized[T](rows)
@@ -322,9 +323,9 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 		return nil, wrapQueryError(err, sqlStr, args)
 	}
 	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-			fmt.Println("failed to close rows:", err)
+		closeErr := rows.Close()
+		if closeErr != nil {
+			log.Printf("failed to close rows: %v", closeErr)
 		}
 	}(rows)
 

@@ -10,7 +10,6 @@ linters:
     - exhaustruct      # Too strict for our use case
     - funlen           # Allow longer functions
     - gocognit         # Allow complex functions
-    - gocyclo          # Allow complex cyclomatic complexity - keep enabled but with higher threshold
     - godox            # Allow TODO comments
     - godot            # Allow comments without periods
     - err113           # Allow error wrapping without %w (renamed from goerr113)
@@ -29,6 +28,15 @@ linters:
     - stylecheck       # Package comments are optional
     - varnamelen       # Short variable names are fine for local scope
     - wsl              # Whitespace linter is too strict
+    - depguard         # Allow internal imports
+    - exhaustive       # Too strict for reflect.Kind switch
+    - forbidigo        # fmt.Println/Printf is acceptable for error logging
+    - gochecknoglobals # Global caches are necessary for performance
+    - gocritic         # Too opinionated
+    - fieldalignment   # Micro-optimization, not critical
+    - shadow           # Shadow variables are acceptable in defer blocks
+    - ireturn          # Generic interfaces are acceptable
+    - cyclop           # Keep gocyclo instead
 
 linters-settings:
   errcheck:
@@ -55,7 +63,7 @@ linters-settings:
     enable-all: true
   
   gocyclo:
-    min-complexity: 15
+    min-complexity: 30
   
   gosec:
     severity: medium
