@@ -14,8 +14,10 @@ type stmtCache struct {
 	db    *sql.DB
 }
 
-var globalStmtCache *stmtCache
-var stmtCacheOnce sync.Once
+var (
+	globalStmtCache *stmtCache
+	stmtCacheOnce   sync.Once
+)
 
 func initStmtCache(db *sql.DB) *stmtCache {
 	stmtCacheOnce.Do(func() {

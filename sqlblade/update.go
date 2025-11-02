@@ -114,7 +114,7 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	}
 
 	var buf strings.Builder
-	buf.Grow(256)
+	buf.Grow(updateBufferSize)
 	paramIndex := 0
 	args := make([]interface{}, 0, len(ub.sets)+len(ub.whereClauses))
 

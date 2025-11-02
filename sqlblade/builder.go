@@ -219,9 +219,9 @@ func (qb *QueryBuilder[T]) Offset(offset int) *QueryBuilder[T] {
 
 func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
 	var buf strings.Builder
-	buf.Grow(512)
+	buf.Grow(sqlBuilderBufferSize)
 	paramIndex := 0
-	args := make([]interface{}, 0, 8)
+	args := make([]interface{}, 0, argsInitialCapacity)
 
 	buf.WriteString("SELECT ")
 	if qb.distinct {

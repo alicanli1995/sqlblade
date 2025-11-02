@@ -55,7 +55,7 @@ func scanRowsOptimized[T any](rows *sql.Rows) ([]T, error) {
 
 	columnMap := columnMapCacheInst.getColumnMap(columns)
 
-	result = make([]T, 0, 10)
+	result = make([]T, 0, resultInitialCapacity)
 
 	scanValues := make([]interface{}, len(columns))
 	scanPtrs := make([]interface{}, len(columns))

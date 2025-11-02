@@ -33,6 +33,8 @@ linters:
     - gocritic         # Too opinionated
     - ireturn          # Generic interfaces are acceptable
     - cyclop           # Keep gocyclo instead
+    - gofumpt          # Use gofmt instead
+    - mnd              # Magic numbers are acceptable with constants
 
 linters-settings:
   errcheck:
