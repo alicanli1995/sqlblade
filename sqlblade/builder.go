@@ -3,6 +3,7 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"reflect"
 	"strings"
@@ -329,7 +330,9 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 				}(rows)
 				result, err := scanRowsOptimized[T](rows)
 				if err == nil {
-					DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args)
+					if hookErr := DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args); hookErr != nil {
+						log.Printf("after query hook error: %v", hookErr)
+					}
 				}
 				return result, err
 			}
@@ -356,7 +359,9 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 
 	result, err := scanRowsOptimized[T](rows)
 	if err == nil {
-		DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args)
+		if hookErr := DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args); hookErr != nil {
+			log.Printf("after query hook error: %v", hookErr)
+		}
 	}
 	return result, err
 }
@@ -370,7 +375,7 @@ func (qb *QueryBuilder[T]) NotExists(ctx context.Context) (bool, error) {
 // Exists creates an EXISTS subquery
 func (qb *QueryBuilder[T]) Exists(ctx context.Context) (bool, error) {
 	sql, args := qb.buildSQL()
-	existsSQL := "SELECT EXISTS(" + sql + ")"
+	existsSQL := fmt.Sprintf("SELECT EXISTS(%s)", sql)
 
 	var result bool
 	if qb.tx != nil {

@@ -3,6 +3,7 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -170,7 +171,10 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		defer func() {
 			debugQuery.Duration = time.Since(startTime)
 			if result != nil {
-				debugQuery.RowsAffected, _ = result.RowsAffected()
+				rowsAffected, err := result.RowsAffected()
+				if err == nil {
+					debugQuery.RowsAffected = rowsAffected
+				}
 			}
 			globalDebugger.Log(debugQuery)
 		}()
@@ -199,7 +203,9 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	}
 
 	// Execute after hooks
-	DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args)
+	if hookErr := DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args); hookErr != nil {
+		log.Printf("after query hook error: %v", hookErr)
+	}
 
 	return result, nil
 }
