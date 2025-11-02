@@ -212,7 +212,7 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 
 	buf.WriteString(strings.Join(valueParts, ", "))
 
-	if len(ib.returning) > 0 && ib.dialect.Name() == "postgres" {
+	if len(ib.returning) > 0 && ib.dialect.Name() == dialectPostgres {
 		buf.WriteString(" RETURNING ")
 		returningCols := make([]string, len(ib.returning))
 		for i, col := range ib.returning {

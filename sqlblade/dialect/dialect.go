@@ -62,11 +62,17 @@ const (
 	FullJoin
 )
 
+const (
+	joinInner = "INNER JOIN"
+	orderASC  = "ASC"
+	orderDESC = "DESC"
+)
+
 // String returns the SQL string representation of JoinType
 func (jt JoinType) String() string {
 	switch jt {
 	case InnerJoin:
-		return "INNER JOIN"
+		return joinInner
 	case LeftJoin:
 		return "LEFT JOIN"
 	case RightJoin:
@@ -74,6 +80,6 @@ func (jt JoinType) String() string {
 	case FullJoin:
 		return "FULL JOIN"
 	default:
-		return "INNER JOIN"
+		return joinInner
 	}
 }

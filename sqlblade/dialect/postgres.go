@@ -57,9 +57,9 @@ func (p *PostgreSQL) BuildOrderBy(orderBy []OrderBy) string {
 	}
 	var parts []string
 	for _, ob := range orderBy {
-		order := "ASC"
+		order := orderASC
 		if ob.Order == DESC {
-			order = "DESC"
+			order = orderDESC
 		}
 		parts = append(parts, fmt.Sprintf("%s %s", p.QuoteIdentifier(ob.Column), order))
 	}

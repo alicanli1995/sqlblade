@@ -59,9 +59,9 @@ func (m *MySQL) BuildOrderBy(orderBy []OrderBy) string {
 	}
 	var parts []string
 	for _, ob := range orderBy {
-		order := "ASC"
+		order := orderASC
 		if ob.Order == DESC {
-			order = "DESC"
+			order = orderDESC
 		}
 		parts = append(parts, fmt.Sprintf("%s %s", m.QuoteIdentifier(ob.Column), order))
 	}

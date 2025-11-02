@@ -114,7 +114,7 @@ func (db *DeleteBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		args = append(args, whereArgs...)
 	}
 
-	if len(db.returning) > 0 && db.dialect.Name() == "postgres" {
+	if len(db.returning) > 0 && db.dialect.Name() == dialectPostgres {
 		buf.WriteString(" RETURNING ")
 		returningCols := make([]string, len(db.returning))
 		for i, col := range db.returning {

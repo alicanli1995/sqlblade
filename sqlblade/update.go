@@ -137,7 +137,7 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		args = append(args, whereArgs...)
 	}
 
-	if len(ub.returning) > 0 && ub.dialect.Name() == "postgres" {
+	if len(ub.returning) > 0 && ub.dialect.Name() == dialectPostgres {
 		buf.WriteString(" RETURNING ")
 		returningCols := make([]string, len(ub.returning))
 		for i, col := range ub.returning {

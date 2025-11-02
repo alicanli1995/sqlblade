@@ -36,7 +36,11 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 	}
 
 	if cached, ok := structCache.Load(typ); ok {
-		return cached.(*structInfo), nil
+		cachedInfo, ok := cached.(*structInfo)
+		if !ok {
+			return nil, ErrInvalidModel
+		}
+		return cachedInfo, nil
 	}
 
 	info := &structInfo{
@@ -139,9 +143,15 @@ func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Typ
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		if val.Kind() == reflect.Int64 || val.Kind() == reflect.Int {
-			field.SetUint(uint64(val.Int()))
+			intVal := val.Int()
+			if intVal >= 0 {
+				field.SetUint(uint64(intVal))
+			}
 		} else if val.Kind() == reflect.Float64 {
-			field.SetUint(uint64(val.Float()))
+			floatVal := val.Float()
+			if floatVal >= 0 && floatVal <= float64(^uint64(0)) {
+				field.SetUint(uint64(floatVal))
+			}
 		}
 	case reflect.Float32, reflect.Float64:
 		if val.Kind() == reflect.Float64 || val.Kind() == reflect.Float32 {

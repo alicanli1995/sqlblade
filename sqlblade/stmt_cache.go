@@ -58,15 +58,19 @@ func hashSQL(sqlStr string) string {
 	return hex.EncodeToString(h[:])
 }
 
+// ClearStmtCache clears all cached statements
+func ClearStmtCache() {
+	if globalStmtCache != nil {
+		globalStmtCache.clear()
+	}
+}
+
 func (sc *stmtCache) clear() {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 
 	for _, stmt := range sc.store {
-		err := stmt.Close()
-		if err != nil {
-			return
-		}
+		_ = stmt.Close()
 	}
 	sc.store = make(map[string]*sql.Stmt)
 }

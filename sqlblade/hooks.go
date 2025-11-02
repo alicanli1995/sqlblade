@@ -41,8 +41,8 @@ func (h *Hooks) AfterQuery(hook QueryHook) {
 	h.afterQuery = append(h.afterQuery, hook)
 }
 
-// executeBeforeHooks executes all before query hooks
-func (h *Hooks) executeBeforeHooks(ctx context.Context, query string, args []interface{}) error {
+// ExecuteBeforeHooks executes all before query hooks
+func (h *Hooks) ExecuteBeforeHooks(ctx context.Context, query string, args []interface{}) error {
 	for _, hook := range h.beforeQuery {
 		if err := hook(ctx, query, args); err != nil {
 			return err
@@ -51,8 +51,8 @@ func (h *Hooks) executeBeforeHooks(ctx context.Context, query string, args []int
 	return nil
 }
 
-// executeAfterHooks executes all after query hooks
-func (h *Hooks) executeAfterHooks(ctx context.Context, query string, args []interface{}) error {
+// ExecuteAfterHooks executes all after query hooks
+func (h *Hooks) ExecuteAfterHooks(ctx context.Context, query string, args []interface{}) error {
 	for _, hook := range h.afterQuery {
 		if err := hook(ctx, query, args); err != nil {
 			return err

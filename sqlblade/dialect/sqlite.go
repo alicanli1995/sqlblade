@@ -57,9 +57,9 @@ func (s *SQLite) BuildOrderBy(orderBy []OrderBy) string {
 	}
 	var parts []string
 	for _, ob := range orderBy {
-		order := "ASC"
+		order := orderASC
 		if ob.Order == DESC {
-			order = "DESC"
+			order = orderDESC
 		}
 		parts = append(parts, fmt.Sprintf("%s %s", s.QuoteIdentifier(ob.Column), order))
 	}
@@ -80,4 +80,3 @@ func (s *SQLite) SupportLastInsertID() bool {
 func (s *SQLite) LastInsertIDReturning(tableName string, idColumn string) string {
 	return ""
 }
-

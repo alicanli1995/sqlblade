@@ -10,7 +10,7 @@ linters:
     - exhaustruct      # Too strict for our use case
     - funlen           # Allow longer functions
     - gocognit         # Allow complex functions
-    - gocyclo          # Allow complex cyclomatic complexity
+    - gocyclo          # Allow complex cyclomatic complexity - keep enabled but with higher threshold
     - godox            # Allow TODO comments
     - godot            # Allow comments without periods
     - err113           # Allow error wrapping without %w (renamed from goerr113)
