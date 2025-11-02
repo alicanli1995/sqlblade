@@ -121,14 +121,14 @@ func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Typ
 		return fmt.Errorf("sqlblade: field cannot be set")
 	}
 
-	if setFastPath(field, value, fieldType) {
+	if setFastPath(field, value) {
 		return nil
 	}
 
 	return setFieldValueSlow(field, value, fieldType)
 }
 
-func setFastPath(field reflect.Value, value interface{}, fieldType reflect.Type) bool {
+func setFastPath(field reflect.Value, value interface{}) bool {
 	if val, ok := value.(int64); ok {
 		if field.Kind() == reflect.Int64 {
 			field.SetInt(val)
