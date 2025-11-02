@@ -45,7 +45,6 @@ linters-settings:
       - whyNoLint
   
   govet:
-    check-shadowing: true
     enable-all: true
   
   gocyclo:
@@ -56,9 +55,6 @@ linters-settings:
     confidence: medium
     excludes:
       - G104 # Allow unhandled errors in some cases
-  
-  maligned:
-    suggest-new: true
   
   misspell:
     locale: US
@@ -72,9 +68,6 @@ linters-settings:
   
   staticcheck:
     checks: ["all"]
-  
-  unused:
-    check-exported: false
 
 issues:
   exclude-use-default: false
@@ -104,16 +97,9 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-  skip-dirs:
-    - vendor
-    - examples
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$"
 
 output:
   formats:
     - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
-
