@@ -45,7 +45,9 @@ var toLowerCache = sync.Map{}
 
 func cachedToLower(s string) string {
 	if cached, ok := toLowerCache.Load(s); ok {
-		return cached.(string)
+		if str, ok := cached.(string); ok {
+			return str
+		}
 	}
 	lower := strings.ToLower(s)
 	toLowerCache.Store(s, lower)
