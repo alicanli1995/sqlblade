@@ -9,6 +9,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/alicanli1995/sqlblade/workflows/CI/badge.svg)](https://github.com/alicanli1995/sqlblade/actions)
+[![Go Reference](https://pkg.go.dev/badge/github.com/alicanli1995/sqlblade.svg)](https://pkg.go.dev/github.com/alicanli1995/sqlblade)
 
 </div>
 
@@ -32,6 +33,8 @@
 ```bash
 go get github.com/alicanli1995/sqlblade
 ```
+
+**📦 Package Documentation:** [pkg.go.dev/github.com/alicanli1995/sqlblade](https://pkg.go.dev/github.com/alicanli1995/sqlblade)
 
 ### Basic Usage
 

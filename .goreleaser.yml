@@ -24,7 +24,6 @@ release:
 
 # Changelog
 changelog:
-  skip: false
   use: github
   sort: asc
   filters:
