@@ -8,6 +8,7 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/alicanli1995/sqlblade/workflows/CI/badge.svg)](https://github.com/alicanli1995/sqlblade/actions)
 
 </div>
 

@@ -1,0 +1,119 @@
+# golangci-lint Configuration
+
+linters:
+  # Enable all linters
+  enable-all: true
+  
+  # Disable specific linters that are too strict or not applicable
+  disable:
+    - exhaustivestruct  # Too strict for our use case
+    - exhaustruct      # Too strict for our use case
+    - funlen           # Allow longer functions
+    - gocognit         # Allow complex functions
+    - gocyclo          # Allow complex cyclomatic complexity
+    - godox            # Allow TODO comments
+    - godot            # Allow comments without periods
+    - goerr113        # Allow error wrapping without %w
+    - gomnd            # Allow magic numbers in tests
+    - lll              # Allow long lines
+    - nestif           # Allow nested if statements
+    - noctx            # Context passed explicitly
+    - revive           # Use golint instead
+    - tagliatelle      # Allow flexible struct tags
+    - testpackage      # Allow test package naming
+    - wrapcheck        # Allow manual error wrapping
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  
+  goconst:
+    min-len: 3
+    min-occurrences: 2
+  
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+  
+  govet:
+    check-shadowing: true
+    enable-all: true
+  
+  gocyclo:
+    min-complexity: 15
+  
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104 # Allow unhandled errors in some cases
+  
+  maligned:
+    suggest-new: true
+  
+  misspell:
+    locale: US
+  
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+      - name: var-naming
+        severity: warning
+  
+  staticcheck:
+    checks: ["all"]
+  
+  unused:
+    check-exported: false
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - staticcheck
+    
+    # Allow specific patterns
+    - text: "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*Flush|os\\.Remove(All)?|.*printf?|.*println)"
+      linters:
+        - errcheck
+    
+    # Allow unused variables in tests
+    - path: _test\.go
+      text: "unused"
+      linters:
+        - unused
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - vendor
+    - examples
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+

@@ -1,0 +1,78 @@
+# GoReleaser Configuration for SQLBlade
+
+project_name: sqlblade
+
+builds:
+  - id: sqlblade
+    binary: sqlblade
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+# Skip Docker, Snapshot, Homebrew, Scoop since this is a library
+dockers:
+  skip: true
+
+snapcrafts:
+  skip: true
+
+brews:
+  skip: true
+
+scoops:
+  skip: true
+
+# GitHub release
+release:
+  github:
+    owner: alicanli1995
+    name: sqlblade
+  footer: |
+    ## Installation
+
+    ```bash
+    go get github.com/alicanli1995/sqlblade@{{ .Tag }}
+    ```
+
+    Full documentation: https://github.com/alicanli1995/sqlblade
+
+# Changelog
+changelog:
+  skip: false
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - Merge pull request
+      - Merge branch
+
+# Artifacts
+archives:
+  - id: default
+    builds:
+      - sqlblade
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+
+# Checksums
+checksum:
+  name_template: 'checksums.txt'
+
+# Signing (optional - requires GPG key)
+# sign:
+#   signature: "${artifact}.asc"
+#   artifacts: checksum
+
+# Publish to pkg.go.dev is automatic when tag is pushed
+
