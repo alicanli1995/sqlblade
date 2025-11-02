@@ -6,15 +6,15 @@ linters:
   
   # Disable specific linters that are too strict or not applicable
   disable:
-    - exhaustivestruct  # Too strict for our use case
+    - exhaustivestruct  # Deprecated
     - exhaustruct      # Too strict for our use case
     - funlen           # Allow longer functions
     - gocognit         # Allow complex functions
     - gocyclo          # Allow complex cyclomatic complexity
     - godox            # Allow TODO comments
     - godot            # Allow comments without periods
-    - goerr113        # Allow error wrapping without %w
-    - gomnd            # Allow magic numbers in tests
+    - err113           # Allow error wrapping without %w (renamed from goerr113)
+    - gomnd            # Deprecated
     - lll              # Allow long lines
     - nestif           # Allow nested if statements
     - noctx            # Context passed explicitly
@@ -22,6 +22,13 @@ linters:
     - tagliatelle      # Allow flexible struct tags
     - testpackage      # Allow test package naming
     - wrapcheck        # Allow manual error wrapping
+    - nlreturn         # Too strict - requires blank lines before return/break
+    - perfsprint       # fmt.Sprintf is fine for readability
+    - prealloc         # Pre-allocation is optional optimization
+    - sqlclosecheck    # Prepared statements are cached, don't close
+    - stylecheck       # Package comments are optional
+    - varnamelen       # Short variable names are fine for local scope
+    - wsl              # Whitespace linter is too strict
 
 linters-settings:
   errcheck:
@@ -103,3 +110,4 @@ output:
     - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
+

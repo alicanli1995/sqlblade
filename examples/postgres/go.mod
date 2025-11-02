@@ -1,6 +1,6 @@
 module github.com/alicanli1995/sqlblade/examples/postgres
 
-go 1.21
+go 1.21.0
 
 require github.com/alicanli1995/sqlblade v0.0.0
 
