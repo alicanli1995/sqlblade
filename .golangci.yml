@@ -6,14 +6,12 @@ linters:
   
   # Disable specific linters that are too strict or not applicable
   disable:
-    - exhaustivestruct  # Deprecated
     - exhaustruct      # Too strict for our use case
     - funlen           # Allow longer functions
     - gocognit         # Allow complex functions
     - godox            # Allow TODO comments
     - godot            # Allow comments without periods
     - err113           # Allow error wrapping without %w (renamed from goerr113)
-    - gomnd            # Deprecated
     - lll              # Allow long lines
     - nestif           # Allow nested if statements
     - noctx            # Context passed explicitly
@@ -33,8 +31,6 @@ linters:
     - forbidigo        # fmt.Println/Printf is acceptable for error logging
     - gochecknoglobals # Global caches are necessary for performance
     - gocritic         # Too opinionated
-    - fieldalignment   # Micro-optimization, not critical
-    - shadow           # Shadow variables are acceptable in defer blocks
     - ireturn          # Generic interfaces are acceptable
     - cyclop           # Keep gocyclo instead
 
@@ -61,6 +57,9 @@ linters-settings:
   
   govet:
     enable-all: true
+    disable:
+      - fieldalignment  # Micro-optimization, not critical
+      - shadow          # Shadow variables are acceptable in defer blocks
   
   gocyclo:
     min-complexity: 30
