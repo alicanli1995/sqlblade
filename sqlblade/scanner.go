@@ -44,7 +44,7 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 	}
 
 	// Try to get table name from TableName() method
-	if method, ok := typ.MethodByName("TableName"); ok {
+	if _, ok := typ.MethodByName("TableName"); ok {
 		val := reflect.New(typ).Interface()
 		if tableNamer, ok := val.(interface{ TableName() string }); ok {
 			info.tableName = tableNamer.TableName()
@@ -59,7 +59,7 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 	// Iterate through struct fields
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		
+
 		// Skip unexported fields
 		if !field.IsExported() {
 			continue
@@ -108,75 +108,9 @@ func toSnakeCase(s string) string {
 }
 
 // scanRows scans database rows into a slice of type T
+// This is kept for backward compatibility, but uses optimized version internally
 func scanRows[T any](rows *sql.Rows) ([]T, error) {
-	var result []T
-	typ := reflect.TypeOf((*T)(nil)).Elem()
-
-	info, err := getStructInfo(typ)
-	if err != nil {
-		return nil, err
-	}
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a map of column name to index
-	columnMap := make(map[string]int)
-	for i, col := range columns {
-		columnMap[strings.ToLower(col)] = i
-	}
-
-	for rows.Next() {
-		var val T
-		ptrVal := reflect.ValueOf(&val).Elem()
-
-		// Prepare scan values
-		scanValues := make([]interface{}, len(columns))
-		for i := range scanValues {
-			var v interface{}
-			scanValues[i] = &v
-		}
-
-		if err := rows.Scan(scanValues...); err != nil {
-			return nil, err
-		}
-
-		// Map columns to struct fields
-		for _, field := range info.fields {
-			colIdx, ok := columnMap[strings.ToLower(field.dbColumn)]
-			if !ok {
-				continue
-			}
-
-			fieldVal := ptrVal.Field(field.index)
-			if !fieldVal.IsValid() || !fieldVal.CanSet() {
-				continue
-			}
-
-			scanVal := scanValues[colIdx].(*interface{})
-			if *scanVal == nil {
-				if field.isPtr {
-					fieldVal.Set(reflect.Zero(fieldVal.Type()))
-				}
-				continue
-			}
-
-			// Convert and set the value
-			if err := setFieldValue(fieldVal, *scanVal, field.fieldType); err != nil {
-				return nil, err
-			}
-		}
-
-		result = append(result, val)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return scanRowsOptimized[T](rows)
 }
 
 // scanRow scans a single database row into type T
@@ -251,4 +185,3 @@ func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Typ
 
 	return nil
 }
-

@@ -223,9 +223,12 @@ func (qb *QueryBuilder[T]) Offset(offset int) *QueryBuilder[T] {
 
 // buildSQL builds the SQL query string
 func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
+	// Pre-allocate buffer capacity for better performance
+	// Most queries are 200-500 bytes, so we allocate 512 bytes
 	var buf strings.Builder
+	buf.Grow(512)
 	paramIndex := 0
-	var args []interface{}
+	args := make([]interface{}, 0, 8) // Pre-allocate args slice
 
 	// SELECT
 	buf.WriteString("SELECT ")
@@ -303,15 +306,29 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 		return nil, ErrNilContext
 	}
 
-	sql, args := qb.buildSQL()
+	sqlStr, args := qb.buildSQL()
 
 	var rows *sql.Rows
 	var err error
 
+	// Use prepared statement cache if available (non-transaction queries)
+	if qb.tx == nil && globalStmtCache != nil && globalStmtCache.db == qb.db {
+		stmt, stmtErr := globalStmtCache.getStmt(ctx, sqlStr)
+		if stmtErr == nil {
+			rows, err = stmt.QueryContext(ctx, args...)
+			if err == nil {
+				defer rows.Close()
+				return scanRowsOptimized[T](rows)
+			}
+			// If prepared statement fails, fall back to regular query
+		}
+	}
+
+	// Fallback to regular query (for transactions or if cache fails)
 	if qb.tx != nil {
-		rows, err = qb.tx.QueryContext(ctx, sql, args...)
+		rows, err = qb.tx.QueryContext(ctx, sqlStr, args...)
 	} else {
-		rows, err = qb.db.QueryContext(ctx, sql, args...)
+		rows, err = qb.db.QueryContext(ctx, sqlStr, args...)
 	}
 
 	if err != nil {
@@ -319,7 +336,7 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 	}
 	defer rows.Close()
 
-	return scanRows[T](rows)
+	return scanRowsOptimized[T](rows)
 }
 
 // First executes the query and returns the first result

@@ -2,7 +2,6 @@ package sqlblade
 
 import (
 	"context"
-	"database/sql"
 )
 
 // QueryHook defines a hook function that can be called before or after queries
@@ -64,4 +63,3 @@ func (h *Hooks) executeAfterHooks(ctx context.Context, query string, args []inte
 
 // DefaultHooks is a global hooks instance
 var DefaultHooks = NewHooks()
-

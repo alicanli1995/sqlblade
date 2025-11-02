@@ -113,9 +113,11 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		return nil, ErrEmptySet
 	}
 
+	// Pre-allocate buffer capacity for better performance
 	var buf strings.Builder
+	buf.Grow(256) // UPDATE queries are typically 150-300 bytes
 	paramIndex := 0
-	var args []interface{}
+	args := make([]interface{}, 0, len(ub.sets)+len(ub.whereClauses))
 
 	buf.WriteString("UPDATE ")
 	buf.WriteString(ub.dialect.QuoteIdentifier(ub.tableName))
@@ -153,6 +155,19 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	var result sql.Result
 	var err error
 
+	// Use prepared statement cache if available (non-transaction queries)
+	if ub.tx == nil && globalStmtCache != nil && globalStmtCache.db == ub.db {
+		stmt, stmtErr := globalStmtCache.getStmt(ctx, sqlStr)
+		if stmtErr == nil {
+			result, err = stmt.ExecContext(ctx, args...)
+			if err == nil {
+				return result, err
+			}
+			// If prepared statement fails, fall back to regular exec
+		}
+	}
+
+	// Fallback to regular exec (for transactions or if cache fails)
 	if ub.tx != nil {
 		result, err = ub.tx.ExecContext(ctx, sqlStr, args...)
 	} else {

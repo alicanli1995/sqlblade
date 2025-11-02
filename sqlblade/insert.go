@@ -211,13 +211,13 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	sqlStr := buf.String()
 
 	var result sql.Result
-	var err error
+	var execErr error
 
 	if ib.tx != nil {
-		result, err = ib.tx.ExecContext(ctx, sqlStr, args...)
+		result, execErr = ib.tx.ExecContext(ctx, sqlStr, args...)
 	} else {
-		result, err = ib.db.ExecContext(ctx, sqlStr, args...)
+		result, execErr = ib.db.ExecContext(ctx, sqlStr, args...)
 	}
 
-	return result, err
+	return result, execErr
 }
