@@ -1,20 +1,11 @@
 # GoReleaser Configuration for SQLBlade
+# This is a Go library, so we mainly need to create GitHub releases
 
 project_name: sqlblade
 
+# Since this is a library, we don't need to build binaries
 builds:
-  - id: sqlblade
-    binary: sqlblade
-    goos:
-      - linux
-      - darwin
-      - windows
-    goarch:
-      - amd64
-      - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64
+  - skip: true  # Skip binary builds for library
 
 # Skip Docker, Snapshot, Homebrew, Scoop since this is a library
 dockers:
@@ -34,6 +25,7 @@ release:
   github:
     owner: alicanli1995
     name: sqlblade
+  mode: replace
   footer: |
     ## Installation
 
@@ -55,24 +47,13 @@ changelog:
       - Merge pull request
       - Merge branch
 
-# Artifacts
+# For libraries, we mainly need the release and changelog
+# No need for archives or checksums for a library
 archives:
-  - id: default
-    builds:
-      - sqlblade
-    format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
+  skip: true
 
-# Checksums
 checksum:
-  name_template: 'checksums.txt'
-
-# Signing (optional - requires GPG key)
-# sign:
-#   signature: "${artifact}.asc"
-#   artifacts: checksum
+  skip: true
 
 # Publish to pkg.go.dev is automatic when tag is pushed
 
