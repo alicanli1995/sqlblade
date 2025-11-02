@@ -25,6 +25,11 @@
 - ⏱️ **Context Support**: Built-in timeout and cancellation support
 - 🛡️ **SQL Injection Prevention**: Parameterized queries and operator whitelisting
 - 📦 **Zero Dependencies**: Uses only standard library (except database drivers)
+- 🎨 **Beautiful SQL Debugging**: Formatted query logging with timing and parameter substitution
+- 👁️ **Query Preview**: See generated SQL without executing queries
+- 🔄 **Query Composition**: Reusable query fragments for DRY code
+- 🔍 **Subquery Support**: Powerful WHERE conditions with subqueries
+- ⚡ **EXISTS Queries**: Efficient existence checks
 
 ## 🚀 Quick Start
 
@@ -117,23 +122,13 @@ func main() {
    make check
    ```
 
-### Available Make Commands
-
-- `make lint` - Run golangci-lint
-- `make lint-fix` - Run golangci-lint with auto-fix
-- `make test` - Run tests with race detection
-- `make build` - Build the project
-- `make build-examples` - Build example programs
-- `make fmt` - Format code with gofmt
-- `make clean` - Clean build artifacts
-- `make check` - Run lint + test
-- `make install-tools` - Install golangci-lint
-
 ## 📚 Examples
 
 See [examples/](examples/) directory for complete examples:
+- [Basic Examples](examples/main.go) - Complete examples including SELECT, INSERT, UPDATE, DELETE, JOIN, Transactions, Query Preview, Fragments, Subqueries, and EXISTS
 - [MySQL Examples](examples/mysql/main.go)
 - [PostgreSQL Examples](examples/postgres/main.go)
+- [Debug Features](examples/debug_features/main.go) - Advanced features demonstration with SQL debugging
 
 ## 🎯 When to Use SQLBlade
 
@@ -225,6 +220,144 @@ SQLBlade is ideal for:
 ### Raw SQL
 
 - `Raw[T](db, query, args...)` - Execute raw SQL queries
+
+### Query Debugging & Preview
+
+- `EnableDebug()` - Enable beautiful SQL query logging
+- `ConfigureDebug(func)` - Configure debug settings
+- `Preview()` - Preview SQL without executing
+- `SQL()` / `SQLWithArgs()` - Get generated SQL string
+- `PrettyPrint()` - Print formatted query
+
+### Query Composition & Subqueries
+
+- `NewQueryFragment()` - Create reusable query fragments
+- `Apply(fragment)` - Apply fragment to query builder
+- `NewSubquery(builder)` - Create subquery from builder
+- `WhereSubquery()` / `OrWhereSubquery()` - Use subqueries in WHERE
+- `Exists()` / `NotExists()` - Check existence efficiently
+
+## 🎨 Advanced Features
+
+### SQL Query Debugging
+
+SQLBlade includes a beautiful, formatted SQL logger that makes debugging queries a joy:
+
+```go
+// Enable debugging globally
+sqlblade.EnableDebug()
+
+// Configure debugger (optional)
+sqlblade.ConfigureDebug(func(qd *sqlblade.QueryDebugger) {
+    qd.ShowArgs(true)           // Show query parameters
+    qd.ShowTiming(true)          // Show execution time
+    qd.SetSlowQueryThreshold(50 * time.Millisecond) // Warn on slow queries
+    qd.IndentSQL(true)           // Pretty format SQL
+})
+
+// Now all queries are automatically logged!
+users, _ := sqlblade.Query[User](db).
+    Where("age", ">", 18).
+    Execute(ctx)
+```
+
+**Output:**
+```
+═══════════════════════════════════════════════════════════════
+SQL Query Debug - 2024-01-15 10:30:45.123
+═══════════════════════════════════════════════════════════════
+Operation: SELECT
+Table:     users
+Duration:  2.34ms
+───────────────────────────────────────────────────────────────
+SQL:
+SELECT * FROM users WHERE age > $1
+───────────────────────────────────────────────────────────────
+Parameters:
+  $1 = 18 (int)
+═══════════════════════════════════════════════════════════════
+```
+
+### Query Preview
+
+Preview generated SQL without executing:
+
+```go
+query := sqlblade.Query[User](db).
+    Where("email", "LIKE", "%@example.com%").
+    Join("profiles", "profiles.user_id = users.id")
+
+// See the SQL
+fmt.Println(query.Preview().SQL())
+// Output: SELECT * FROM users JOIN profiles ON profiles.user_id = users.id WHERE email LIKE $1
+
+// See SQL with substituted arguments
+fmt.Println(query.Preview().SQLWithArgs())
+// Output: SELECT * FROM users JOIN profiles ON profiles.user_id = users.id WHERE email LIKE '%@example.com%'
+
+// Pretty print
+query.Preview().PrettyPrint()
+```
+
+### Query Fragments (DRY Code)
+
+Create reusable query fragments to avoid repetition:
+
+```go
+// Create a reusable fragment
+activeUsersFragment := sqlblade.NewQueryFragment().
+    Where("status", "=", "active").
+    Where("email_verified", "=", true).
+    OrderBy("created_at", dialect.DESC)
+
+// Apply to multiple queries
+recentActive, _ := sqlblade.Query[User](db).
+    Apply(activeUsersFragment).
+    Limit(10).
+    Execute(ctx)
+
+allActive, _ := sqlblade.Query[User](db).
+    Apply(activeUsersFragment).
+    Execute(ctx)
+```
+
+### Subqueries
+
+Use subqueries in WHERE clauses for powerful queries:
+
+```go
+// Find users who have placed orders
+usersWithOrders, _ := sqlblade.Query[User](db).
+    WhereSubquery("id", "IN", sqlblade.NewSubquery(
+        sqlblade.Query[struct {
+            UserID int `db:"user_id"`
+        }](db).
+            Select("user_id").
+            Where("status", "=", "completed"),
+    )).
+    Execute(ctx)
+```
+
+### EXISTS Queries
+
+Efficiently check existence:
+
+```go
+// Check if any active users exist
+hasActiveUsers, _ := sqlblade.Query[User](db).
+    Where("status", "=", "active").
+    Limit(1).
+    Exists(ctx)
+
+if hasActiveUsers {
+    fmt.Println("There are active users!")
+}
+
+// Or use NotExists
+hasNoAdmins, _ := sqlblade.Query[User](db).
+    Where("role", "=", "admin").
+    NotExists(ctx)
+```
 
 ## 🔒 Type Safety
 

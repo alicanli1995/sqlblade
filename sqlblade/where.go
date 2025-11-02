@@ -31,6 +31,8 @@ var validOperators = map[string]bool{
 	"IS NOT NULL": true,
 	"BETWEEN":     true,
 	"NOT BETWEEN": true,
+	"EXISTS":      true,
+	"NOT EXISTS":  true,
 }
 
 // isValidOperator checks if an operator is valid
@@ -78,9 +80,15 @@ func buildWhereClause(d dialect.Dialect, clauses []WhereClause, paramIndex *int)
 				args = append(args, values[0], values[1])
 			}
 		default:
-			*paramIndex++
-			condition = d.QuoteIdentifier(clause.Column) + " " + op + " " + d.Placeholder(*paramIndex)
-			args = append(args, clause.Value)
+			// Check if value is a subquery
+			if subquery, ok := clause.Value.(*Subquery); ok {
+				condition = d.QuoteIdentifier(clause.Column) + " " + op + " " + subquery.SQL()
+				args = append(args, subquery.Args()...)
+			} else {
+				*paramIndex++
+				condition = d.QuoteIdentifier(clause.Column) + " " + op + " " + d.Placeholder(*paramIndex)
+				args = append(args, clause.Value)
+			}
 		}
 
 		if condition != "" {

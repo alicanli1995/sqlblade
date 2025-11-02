@@ -162,4 +162,75 @@ func main() {
 	} else {
 		fmt.Printf("Average age: %.2f\n", avgAge)
 	}
+
+	// Example 10: Query Preview - See SQL without executing
+	fmt.Println("\n=== Example 10: Query Preview ===")
+	previewQuery := sqlblade.Query[User](db).
+		Where("email", "LIKE", "%@example.com%").
+		Join("profiles", "profiles.user_id = users.id").
+		OrderBy("created_at", dialect.DESC)
+
+	preview := previewQuery.Preview()
+	fmt.Println("Generated SQL:", preview.SQL())
+	fmt.Println("\nSQL with substituted args:", preview.SQLWithArgs())
+	fmt.Println("\nQuery arguments:", preview.Args())
+
+	// Example 11: Query Fragments - Reusable query parts
+	fmt.Println("\n=== Example 11: Query Fragments ===")
+	// Create a reusable fragment
+	activeUsersFragment := sqlblade.NewQueryFragment().
+		Where("status", "=", "active").
+		OrderBy("created_at", dialect.DESC)
+
+	// Apply fragment to multiple queries
+	recentActiveUsers, err := sqlblade.Query[User](db).
+		Apply(activeUsersFragment).
+		Limit(5).
+		Execute(ctx)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	} else {
+		fmt.Printf("Found %d recent active users\n", len(recentActiveUsers))
+	}
+
+	// Example 12: Subqueries - Powerful WHERE conditions
+	fmt.Println("\n=== Example 12: Subqueries ===")
+	// Find users who have recent posts (example subquery)
+	usersWithRecentPosts, err := sqlblade.Query[User](db).
+		WhereSubquery("id", "IN", sqlblade.NewSubquery(
+			sqlblade.Query[struct {
+				UserID int `db:"user_id"`
+			}](db).
+				Select("user_id").
+				Where("created_at", ">", time.Now().AddDate(0, -1, 0)),
+		)).
+		Execute(ctx)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	} else {
+		fmt.Printf("Found %d users with recent posts\n", len(usersWithRecentPosts))
+	}
+
+	// Example 13: EXISTS - Check existence efficiently
+	fmt.Println("\n=== Example 13: EXISTS Queries ===")
+	hasActiveUsers, err := sqlblade.Query[User](db).
+		Where("status", "=", "active").
+		Limit(1).
+		Exists(ctx)
+	if err != nil {
+		log.Printf("Error: %v", err)
+	} else {
+		if hasActiveUsers {
+			fmt.Println("✅ There are active users!")
+		} else {
+			fmt.Println("❌ No active users found")
+		}
+	}
+
+	// Example 14: SQL Query Debugging
+	fmt.Println("\n=== Example 14: SQL Query Debugging ===")
+	fmt.Println("Enable debug mode to see beautiful SQL logging:")
+	fmt.Println("  sqlblade.EnableDebug()")
+	fmt.Println("  sqlblade.ConfigureDebug(func(qd *sqlblade.QueryDebugger) { ... })")
+	fmt.Println("\nAll queries will be logged with timing, parameters, and formatted SQL!")
 }

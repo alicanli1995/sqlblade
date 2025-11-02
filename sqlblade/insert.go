@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
@@ -222,9 +223,33 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	}
 
 	sqlStr := buf.String()
+	startTime := time.Now()
+
+	// Execute before hooks
+	if err := DefaultHooks.ExecuteBeforeHooks(ctx, sqlStr, args); err != nil {
+		return nil, err
+	}
 
 	var result sql.Result
 	var execErr error
+
+	// Debug logging
+	if globalDebugger.enabled {
+		debugQuery := &DebugQuery{
+			SQL:       sqlStr,
+			Args:      args,
+			Table:     ib.tableName,
+			Operation: "INSERT",
+			Timestamp: startTime,
+		}
+		defer func() {
+			debugQuery.Duration = time.Since(startTime)
+			if result != nil {
+				debugQuery.RowsAffected, _ = result.RowsAffected()
+			}
+			globalDebugger.Log(debugQuery)
+		}()
+	}
 
 	if ib.tx != nil {
 		result, execErr = ib.tx.ExecContext(ctx, sqlStr, args...)
@@ -235,6 +260,9 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	if execErr != nil {
 		return nil, wrapQueryError(execErr, sqlStr, args)
 	}
+
+	// Execute after hooks
+	DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args)
 
 	return result, nil
 }

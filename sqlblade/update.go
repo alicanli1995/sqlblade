@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
@@ -147,9 +148,33 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	}
 
 	sqlStr := buf.String()
+	startTime := time.Now()
+
+	// Execute before hooks
+	if err := DefaultHooks.ExecuteBeforeHooks(ctx, sqlStr, args); err != nil {
+		return nil, err
+	}
 
 	var result sql.Result
 	var err error
+
+	// Debug logging
+	if globalDebugger.enabled {
+		debugQuery := &DebugQuery{
+			SQL:       sqlStr,
+			Args:      args,
+			Table:     ub.tableName,
+			Operation: "UPDATE",
+			Timestamp: startTime,
+		}
+		defer func() {
+			debugQuery.Duration = time.Since(startTime)
+			if result != nil {
+				debugQuery.RowsAffected, _ = result.RowsAffected()
+			}
+			globalDebugger.Log(debugQuery)
+		}()
+	}
 
 	if ub.tx == nil && globalStmtCache != nil && globalStmtCache.db == ub.db {
 		stmt, stmtErr := globalStmtCache.getStmt(ctx, sqlStr)
@@ -172,6 +197,9 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	if err != nil {
 		return nil, wrapQueryError(err, sqlStr, args)
 	}
+
+	// Execute after hooks
+	DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args)
 
 	return result, nil
 }

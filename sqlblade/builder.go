@@ -3,10 +3,10 @@ package sqlblade
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
@@ -291,6 +291,27 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 	}
 
 	sqlStr, args := qb.buildSQL()
+	startTime := time.Now()
+
+	// Execute before hooks
+	if err := DefaultHooks.ExecuteBeforeHooks(ctx, sqlStr, args); err != nil {
+		return nil, err
+	}
+
+	// Debug logging
+	if globalDebugger.enabled {
+		debugQuery := &DebugQuery{
+			SQL:       sqlStr,
+			Args:      args,
+			Table:     qb.tableName,
+			Operation: "SELECT",
+			Timestamp: startTime,
+		}
+		defer func() {
+			debugQuery.Duration = time.Since(startTime)
+			globalDebugger.Log(debugQuery)
+		}()
+	}
 
 	var rows *sql.Rows
 	var err error
@@ -306,7 +327,11 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 						log.Printf("failed to close rows: %v", closeErr)
 					}
 				}(rows)
-				return scanRowsOptimized[T](rows)
+				result, err := scanRowsOptimized[T](rows)
+				if err == nil {
+					DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args)
+				}
+				return result, err
 			}
 			return nil, wrapQueryError(err, sqlStr, args)
 		}
@@ -329,18 +354,39 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 		}
 	}(rows)
 
-	return scanRowsOptimized[T](rows)
+	result, err := scanRowsOptimized[T](rows)
+	if err == nil {
+		DefaultHooks.ExecuteAfterHooks(ctx, sqlStr, args)
+	}
+	return result, err
 }
 
-// First executes the query and returns the first result
-func (qb *QueryBuilder[T]) First(ctx context.Context) (T, error) {
-	var zero T
-	results, err := qb.Limit(1).Execute(ctx)
+// NotExists creates a NOT EXISTS subquery
+func (qb *QueryBuilder[T]) NotExists(ctx context.Context) (bool, error) {
+	exists, err := qb.Exists(ctx)
+	return !exists, err
+}
+
+// Exists creates an EXISTS subquery
+func (qb *QueryBuilder[T]) Exists(ctx context.Context) (bool, error) {
+	sql, args := qb.buildSQL()
+	existsSQL := "SELECT EXISTS(" + sql + ")"
+
+	var result bool
+	if qb.tx != nil {
+		row := qb.tx.QueryRowContext(ctx, existsSQL, args...)
+		err := row.Scan(&result)
+		if err != nil {
+			return false, wrapQueryError(err, existsSQL, args)
+		}
+		return result, nil
+	}
+
+	row := qb.db.QueryRowContext(ctx, existsSQL, args...)
+	err := row.Scan(&result)
 	if err != nil {
-		return zero, err
+		return false, wrapQueryError(err, existsSQL, args)
 	}
-	if len(results) == 0 {
-		return zero, fmt.Errorf("%w (table: %s)", ErrNoRows, qb.tableName)
-	}
-	return results[0], nil
+
+	return result, nil
 }
