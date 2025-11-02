@@ -52,10 +52,9 @@ func buildWhereClause(d dialect.Dialect, clauses []WhereClause, paramIndex *int)
 		op := strings.ToUpper(strings.TrimSpace(clause.Operator))
 
 		if !isValidOperator(op) {
-			continue // Skip invalid operators
+			continue
 		}
 
-		// Build condition based on operator
 		switch op {
 		case "IS NULL", "IS NOT NULL":
 			condition = d.QuoteIdentifier(clause.Column) + " " + op

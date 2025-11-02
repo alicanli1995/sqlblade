@@ -34,7 +34,6 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 		return nil, ErrInvalidModel
 	}
 
-	// Check cache
 	if cached, ok := structCache.Load(typ); ok {
 		return cached.(*structInfo), nil
 	}
@@ -43,7 +42,6 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 		fields: make([]fieldInfo, 0),
 	}
 
-	// Try to get table name from TableName() method
 	if _, ok := typ.MethodByName("TableName"); ok {
 		val := reflect.New(typ).Interface()
 		if tableNamer, ok := val.(interface{ TableName() string }); ok {
@@ -51,27 +49,22 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 		}
 	}
 
-	// If no table name method, use snake_case of struct name
 	if info.tableName == "" {
 		info.tableName = toSnakeCase(typ.Name())
 	}
 
-	// Iterate through struct fields
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 
-		// Skip unexported fields
 		if !field.IsExported() {
 			continue
 		}
 
-		// Check for db tag
 		dbTag := field.Tag.Get("db")
 		if dbTag == "" || dbTag == "-" {
 			continue
 		}
 
-		// Parse db tag (supports "column" or "column,option")
 		parts := strings.Split(dbTag, ",")
 		columnName := parts[0]
 
@@ -90,7 +83,6 @@ func getStructInfo(typ reflect.Type) (*structInfo, error) {
 		})
 	}
 
-	// Cache the result
 	structCache.Store(typ, info)
 	return info, nil
 }
@@ -107,8 +99,6 @@ func toSnakeCase(s string) string {
 	return strings.ToLower(result.String())
 }
 
-// scanRows scans database rows into a slice of type T
-// This is kept for backward compatibility, but uses optimized version internally
 func scanRows[T any](rows *sql.Rows) ([]T, error) {
 	return scanRowsOptimized[T](rows)
 }
@@ -130,7 +120,6 @@ func scanRow[T any](rows *sql.Rows) (T, error) {
 func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Type) error {
 	val := reflect.ValueOf(value)
 
-	// Handle NULL values
 	if !val.IsValid() {
 		if field.Kind() == reflect.Ptr {
 			field.Set(reflect.Zero(field.Type()))
@@ -138,13 +127,11 @@ func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Typ
 		return nil
 	}
 
-	// Direct assignment if types match
 	if val.Type().AssignableTo(field.Type()) {
 		field.Set(val)
 		return nil
 	}
 
-	// Handle pointer fields
 	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			field.Set(reflect.New(fieldType))
@@ -152,7 +139,6 @@ func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Typ
 		field = field.Elem()
 	}
 
-	// Type conversion
 	switch fieldType.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if val.Kind() == reflect.Int64 || val.Kind() == reflect.Int {
@@ -177,7 +163,6 @@ func setFieldValue(field reflect.Value, value interface{}, fieldType reflect.Typ
 	case reflect.Bool:
 		field.SetBool(val.Bool())
 	default:
-		// Try direct conversion
 		if val.Type().ConvertibleTo(fieldType) {
 			field.Set(val.Convert(fieldType))
 		}

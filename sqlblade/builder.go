@@ -32,10 +32,8 @@ func Query[T any](db *sql.DB) *QueryBuilder[T] {
 		panic(ErrNilDB)
 	}
 
-	// Detect dialect from driver name
 	d := detectDialect(db.Driver())
 
-	// Get table name from type
 	var zero T
 	typ := reflect.TypeOf(zero)
 	if typ.Kind() == reflect.Ptr {
@@ -44,7 +42,6 @@ func Query[T any](db *sql.DB) *QueryBuilder[T] {
 
 	info, err := getStructInfo(typ)
 	if err != nil {
-		// Fallback to snake_case struct name
 		info = &structInfo{
 			tableName: toSnakeCase(typ.Name()),
 		}
@@ -69,9 +66,7 @@ func QueryTx[T any](tx *sql.Tx) *QueryBuilder[T] {
 		panic(ErrNilDB)
 	}
 
-	// For transaction, we need to detect dialect from the underlying connection
-	// This is a simplified version - in production you might want to pass dialect explicitly
-	d := detectDialect(nil) // Fallback to PostgreSQL
+	d := detectDialect(nil)
 
 	var zero T
 	typ := reflect.TypeOf(zero)
@@ -102,10 +97,9 @@ func QueryTx[T any](tx *sql.Tx) *QueryBuilder[T] {
 // detectDialect detects database dialect from driver
 func detectDialect(driver interface{}) dialect.Dialect {
 	if driver == nil {
-		return dialect.NewPostgreSQL() // Default
+		return dialect.NewPostgreSQL()
 	}
 
-	// Try to get driver name using reflection
 	driverType := reflect.TypeOf(driver).String()
 	switch {
 	case strings.Contains(driverType, "pq") || strings.Contains(driverType, "postgres"):
@@ -115,7 +109,7 @@ func detectDialect(driver interface{}) dialect.Dialect {
 	case strings.Contains(driverType, "sqlite"):
 		return dialect.NewSQLite()
 	default:
-		return dialect.NewPostgreSQL() // Default to PostgreSQL
+		return dialect.NewPostgreSQL()
 	}
 }
 
@@ -221,22 +215,17 @@ func (qb *QueryBuilder[T]) Offset(offset int) *QueryBuilder[T] {
 	return qb
 }
 
-// buildSQL builds the SQL query string
 func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
-	// Pre-allocate buffer capacity for better performance
-	// Most queries are 200-500 bytes, so we allocate 512 bytes
 	var buf strings.Builder
 	buf.Grow(512)
 	paramIndex := 0
-	args := make([]interface{}, 0, 8) // Pre-allocate args slice
+	args := make([]interface{}, 0, 8)
 
-	// SELECT
 	buf.WriteString("SELECT ")
 	if qb.distinct {
 		buf.WriteString("DISTINCT ")
 	}
 
-	// Columns
 	if len(qb.selectCols) > 0 {
 		quotedCols := make([]string, len(qb.selectCols))
 		for i, col := range qb.selectCols {
@@ -247,17 +236,14 @@ func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
 		buf.WriteString("*")
 	}
 
-	// FROM
 	buf.WriteString(" FROM ")
 	buf.WriteString(qb.dialect.QuoteIdentifier(qb.tableName))
 
-	// JOINs
 	for _, join := range qb.joins {
 		buf.WriteString(" ")
 		buf.WriteString(qb.dialect.BuildJoin(join))
 	}
 
-	// WHERE
 	whereSQL, whereArgs := buildWhereClause(qb.dialect, qb.whereClauses, &paramIndex)
 	if whereSQL != "" {
 		buf.WriteString(" ")
@@ -265,7 +251,6 @@ func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
 		args = append(args, whereArgs...)
 	}
 
-	// GROUP BY
 	if len(qb.groupBy) > 0 {
 		buf.WriteString(" GROUP BY ")
 		quotedCols := make([]string, len(qb.groupBy))
@@ -275,7 +260,6 @@ func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
 		buf.WriteString(strings.Join(quotedCols, ", "))
 	}
 
-	// HAVING
 	if len(qb.having) > 0 {
 		havingSQL, havingArgs := buildWhereClause(qb.dialect, qb.having, &paramIndex)
 		if havingSQL != "" {
@@ -285,13 +269,11 @@ func (qb *QueryBuilder[T]) buildSQL() (string, []interface{}) {
 		}
 	}
 
-	// ORDER BY
 	if len(qb.orderBy) > 0 {
 		buf.WriteString(" ")
 		buf.WriteString(qb.dialect.BuildOrderBy(qb.orderBy))
 	}
 
-	// LIMIT and OFFSET
 	if qb.limit != nil || qb.offset != nil {
 		buf.WriteString(" ")
 		buf.WriteString(qb.dialect.BuildLimitOffset(qb.limit, qb.offset))
@@ -311,7 +293,6 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 	var rows *sql.Rows
 	var err error
 
-	// Use prepared statement cache if available (non-transaction queries)
 	if qb.tx == nil && globalStmtCache != nil && globalStmtCache.db == qb.db {
 		stmt, stmtErr := globalStmtCache.getStmt(ctx, sqlStr)
 		if stmtErr == nil {
@@ -320,11 +301,9 @@ func (qb *QueryBuilder[T]) Execute(ctx context.Context) ([]T, error) {
 				defer rows.Close()
 				return scanRowsOptimized[T](rows)
 			}
-			// If prepared statement fails, fall back to regular query
 		}
 	}
 
-	// Fallback to regular query (for transactions or if cache fails)
 	if qb.tx != nil {
 		rows, err = qb.tx.QueryContext(ctx, sqlStr, args...)
 	} else {

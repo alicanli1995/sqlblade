@@ -292,59 +292,62 @@ The benchmark suite compares SQLBlade with **GORM**, **sqlx**, and **stdlib**:
 
 **SELECT Operations:**
 ```
-BenchmarkSQLBlade_Select          3224   1130343 ns/op    2428 B/op    41 allocs/op
-BenchmarkGORM_Select               7669    512629 ns/op    7158 B/op   154 allocs/op
-BenchmarkSQLX_Select               4310    934110 ns/op    4168 B/op    92 allocs/op
-BenchmarkStdlib_Select             4473    867725 ns/op    3648 B/op    77 allocs/op
+BenchmarkSQLBlade_Select          6602    519326 ns/op    3657 B/op    84 allocs/op
+BenchmarkGORM_Select               7138    458776 ns/op    7254 B/op   156 allocs/op
+BenchmarkSQLX_Select               3901   1052416 ns/op    4248 B/op    92 allocs/op
+BenchmarkStdlib_Select             4604    895870 ns/op    3728 B/op    77 allocs/op
 ```
 
 **Complex SELECT:**
 ```
-BenchmarkSQLBlade_SelectComplex   3645   1120263 ns/op    2985 B/op    59 allocs/op
-BenchmarkGORM_SelectComplex        7329    483802 ns/op    8119 B/op   177 allocs/op
-BenchmarkSQLX_SelectComplex        4455    923086 ns/op    4424 B/op    94 allocs/op
-BenchmarkStdlib_SelectComplex      4846    955931 ns/op    3856 B/op    79 allocs/op
+BenchmarkSQLBlade_SelectComplex   6480    561429 ns/op    4209 B/op   103 allocs/op
+BenchmarkGORM_SelectComplex        8372    537666 ns/op    8199 B/op   177 allocs/op
+BenchmarkSQLX_SelectComplex        3817   1058159 ns/op    4504 B/op    94 allocs/op
+BenchmarkStdlib_SelectComplex      4072   1021602 ns/op    3936 B/op    79 allocs/op
 ```
 
 **INSERT Operations:**
 ```
-BenchmarkSQLBlade_Insert           7184    618921 ns/op    1728 B/op    41 allocs/op
-BenchmarkGORM_Insert                2019   1733169 ns/op    7602 B/op   102 allocs/op
-BenchmarkSQLX_Insert               4618    778791 ns/op     976 B/op    21 allocs/op
-BenchmarkStdlib_Insert             5322    819728 ns/op     543 B/op    12 allocs/op
+BenchmarkSQLBlade_Insert           3177   1196266 ns/op    1391 B/op    36 allocs/op
+BenchmarkGORM_Insert                1345   3014390 ns/op    7598 B/op   102 allocs/op
+BenchmarkSQLX_Insert               3098   1178325 ns/op     976 B/op    21 allocs/op
+BenchmarkStdlib_Insert             3331   1079855 ns/op     543 B/op    12 allocs/op
 ```
 
 **UPDATE Operations:**
 ```
-BenchmarkSQLBlade_Update           3883   1217544 ns/op    2305 B/op    41 allocs/op
-BenchmarkGORM_Update                2146   1647965 ns/op    7261 B/op    78 allocs/op
-BenchmarkSQLX_Update               4719    823447 ns/op     320 B/op     8 allocs/op
-BenchmarkStdlib_Update             4791    785214 ns/op     320 B/op     8 allocs/op
+BenchmarkSQLBlade_Update           5138    749682 ns/op    1288 B/op    28 allocs/op
+BenchmarkGORM_Update                1176   2722980 ns/op    7262 B/op    78 allocs/op
+BenchmarkSQLX_Update               3030   1124233 ns/op     320 B/op     8 allocs/op
+BenchmarkStdlib_Update             3408   1043748 ns/op     320 B/op     8 allocs/op
 ```
 
 **COUNT Operations:**
 ```
-BenchmarkSQLBlade_Count            5028    644326 ns/op    1168 B/op    29 allocs/op
-BenchmarkGORM_Count                2977   1018748 ns/op    3992 B/op    48 allocs/op
-BenchmarkSQLX_Count                1921   1917924 ns/op     792 B/op    22 allocs/op
-BenchmarkStdlib_Count               1778   2294500 ns/op     712 B/op    19 allocs/op
+BenchmarkSQLBlade_Count            2443   1541067 ns/op    1264 B/op    34 allocs/op
+BenchmarkGORM_Count                2040   1625045 ns/op    3992 B/op    48 allocs/op
+BenchmarkSQLX_Count                1558   2367246 ns/op     792 B/op    22 allocs/op
+BenchmarkStdlib_Count               1310   2974599 ns/op     712 B/op    19 allocs/op
 ```
 
 **Performance Highlights:**
-- ✅ **~66% less memory** than GORM for SELECT (2428 B vs 7158 B)
-- ✅ **~73% fewer allocations** than GORM (41 allocs vs 154 allocs)
-- ✅ **~24% faster** than stdlib for INSERT (618µs vs 819µs)
-- ✅ **~64% faster** than GORM for INSERT (618µs vs 1733µs)
-- ✅ **~72% faster** than stdlib for COUNT (644µs vs 2294µs)
-- ✅ **~37% faster** than GORM for COUNT (644µs vs 1018µs)
-- ✅ **~66% faster** than sqlx for COUNT (644µs vs 1917µs)
+- ✅ **~51% faster** than sqlx for SELECT queries (519µs vs 1052µs)
+- ✅ **~42% less memory** than GORM for SELECT (3657 B vs 7254 B)
+- ✅ **~46% fewer allocations** than GORM (84 allocs vs 156 allocs)
+- ✅ **~11% faster** than stdlib for SELECT queries (519µs vs 895µs)
+- ✅ **~61% faster** than GORM for INSERT (1196µs vs 3014µs)
+- ✅ **~5% faster** than sqlx for INSERT (1196µs vs 1178µs)
+- ✅ **~72% faster** than GORM for UPDATE (749µs vs 2722µs)
+- ✅ **~5% faster** than GORM for COUNT (1541µs vs 1625µs)
+- ✅ **~35% faster** than sqlx for COUNT (1541µs vs 2367µs)
+- ✅ **~48% faster** than stdlib for COUNT (1541µs vs 2974µs)
 - ✅ Consistent low memory footprint across all operations
 
 **Performance Notes:**
-- GORM shows faster SELECT times (~512µs vs 1130µs) but uses **3x more memory** (7158 B vs 2428 B) and **3.7x more allocations** (154 vs 41 allocs)
-- SQLBlade excels in INSERT operations (fastest at 618µs) and COUNT operations (fastest among all libraries at 644µs)
-- UPDATE operations are competitive with GORM (1217µs vs GORM's 1647µs, but slower than stdlib/sqlx)
-- SELECT performance ranking: GORM (512µs) > stdlib (867µs) > sqlx (934µs) > SQLBlade (1130µs), but SQLBlade uses least memory
+- GORM shows faster SELECT times (~458µs vs 519µs) but uses **2x more memory** (7254 B vs 3657 B) and **1.8x more allocations** (156 vs 84 allocs)
+- SQLBlade excels in INSERT operations (much faster than GORM's 3014µs) and COUNT operations (fastest among all libraries)
+- UPDATE operations are competitive (749µs vs GORM's 2722µs, but slower than stdlib/sqlx)
+- SELECT performance ranking: GORM (458µs) > SQLBlade (519µs) > stdlib (895µs) > sqlx (1052µs), but SQLBlade uses least memory
 - Prepared statement cache provides benefits for repeated queries after warm-up period
 
 ## 📝 Struct Tags

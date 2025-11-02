@@ -107,7 +107,6 @@ func (db *DeleteBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	buf.WriteString("DELETE FROM ")
 	buf.WriteString(db.dialect.QuoteIdentifier(db.tableName))
 
-	// WHERE clause
 	whereSQL, whereArgs := buildWhereClause(db.dialect, db.whereClauses, &paramIndex)
 	if whereSQL != "" {
 		buf.WriteString(" ")
@@ -115,7 +114,6 @@ func (db *DeleteBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		args = append(args, whereArgs...)
 	}
 
-	// RETURNING clause (PostgreSQL)
 	if len(db.returning) > 0 && db.dialect.Name() == "postgres" {
 		buf.WriteString(" RETURNING ")
 		returningCols := make([]string, len(db.returning))

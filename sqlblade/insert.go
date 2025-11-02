@@ -55,7 +55,7 @@ func InsertTx[T any](tx *sql.Tx, value T) *InsertBuilder[T] {
 		panic(ErrNilDB)
 	}
 
-	d := detectDialect(nil) // Fallback
+	d := detectDialect(nil)
 	typ := reflect.TypeOf(value)
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -142,16 +142,32 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		return nil, err
 	}
 
-	// Determine columns to insert
 	columns := ib.columns
 	if len(columns) == 0 {
-		columns = make([]string, len(info.fields))
-		for i, field := range info.fields {
-			columns[i] = field.dbColumn
+		if len(ib.values) > 0 {
+			valRef := reflect.ValueOf(ib.values[0])
+			if valRef.Kind() == reflect.Ptr {
+				valRef = valRef.Elem()
+			}
+
+			columns = make([]string, 0, len(info.fields))
+			for _, field := range info.fields {
+				if strings.Contains(strings.ToLower(field.dbColumn), "id") {
+					fieldVal := valRef.Field(field.index)
+					if fieldVal.IsValid() && fieldVal.IsZero() {
+						continue
+					}
+				}
+				columns = append(columns, field.dbColumn)
+			}
+		} else {
+			columns = make([]string, 0, len(info.fields))
+			for _, field := range info.fields {
+				columns = append(columns, field.dbColumn)
+			}
 		}
 	}
 
-	// Build SQL
 	var buf strings.Builder
 	paramIndex := 0
 	var args []interface{}
@@ -167,7 +183,6 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	buf.WriteString(strings.Join(quotedCols, ", "))
 	buf.WriteString(") VALUES ")
 
-	// Build values
 	valueParts := make([]string, len(ib.values))
 	for i, val := range ib.values {
 		valRef := reflect.ValueOf(val)
@@ -180,7 +195,6 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 			paramIndex++
 			placeholders[j] = ib.dialect.Placeholder(paramIndex)
 
-			// Find field value
 			var fieldValue interface{}
 			for _, field := range info.fields {
 				if field.dbColumn == col {
@@ -198,7 +212,6 @@ func (ib *InsertBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 
 	buf.WriteString(strings.Join(valueParts, ", "))
 
-	// RETURNING clause (PostgreSQL)
 	if len(ib.returning) > 0 && ib.dialect.Name() == "postgres" {
 		buf.WriteString(" RETURNING ")
 		returningCols := make([]string, len(ib.returning))

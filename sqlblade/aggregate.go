@@ -84,7 +84,6 @@ func (qb *QueryBuilder[T]) aggregate(ctx context.Context, fn AggregateFunc, colu
 	paramIndex := 0
 	var args []interface{}
 
-	// SELECT aggregate function
 	buf.WriteString("SELECT ")
 	buf.WriteString(string(fn))
 	buf.WriteString("(")
@@ -95,17 +94,14 @@ func (qb *QueryBuilder[T]) aggregate(ctx context.Context, fn AggregateFunc, colu
 	}
 	buf.WriteString(")")
 
-	// FROM
 	buf.WriteString(" FROM ")
 	buf.WriteString(qb.dialect.QuoteIdentifier(qb.tableName))
 
-	// JOINs
 	for _, join := range qb.joins {
 		buf.WriteString(" ")
 		buf.WriteString(qb.dialect.BuildJoin(join))
 	}
 
-	// WHERE
 	whereSQL, whereArgs := buildWhereClause(qb.dialect, qb.whereClauses, &paramIndex)
 	if whereSQL != "" {
 		buf.WriteString(" ")
@@ -113,7 +109,6 @@ func (qb *QueryBuilder[T]) aggregate(ctx context.Context, fn AggregateFunc, colu
 		args = append(args, whereArgs...)
 	}
 
-	// GROUP BY
 	if len(qb.groupBy) > 0 {
 		buf.WriteString(" GROUP BY ")
 		quotedCols := make([]string, len(qb.groupBy))
@@ -123,7 +118,6 @@ func (qb *QueryBuilder[T]) aggregate(ctx context.Context, fn AggregateFunc, colu
 		buf.WriteString(strings.Join(quotedCols, ", "))
 	}
 
-	// HAVING
 	if len(qb.having) > 0 {
 		havingSQL, havingArgs := buildWhereClause(qb.dialect, qb.having, &paramIndex)
 		if havingSQL != "" {

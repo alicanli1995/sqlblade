@@ -113,9 +113,8 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		return nil, ErrEmptySet
 	}
 
-	// Pre-allocate buffer capacity for better performance
 	var buf strings.Builder
-	buf.Grow(256) // UPDATE queries are typically 150-300 bytes
+	buf.Grow(256)
 	paramIndex := 0
 	args := make([]interface{}, 0, len(ub.sets)+len(ub.whereClauses))
 
@@ -123,7 +122,6 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	buf.WriteString(ub.dialect.QuoteIdentifier(ub.tableName))
 	buf.WriteString(" SET ")
 
-	// Build SET clauses
 	setParts := make([]string, 0, len(ub.sets))
 	for col, val := range ub.sets {
 		paramIndex++
@@ -132,7 +130,6 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	}
 	buf.WriteString(strings.Join(setParts, ", "))
 
-	// WHERE clause
 	whereSQL, whereArgs := buildWhereClause(ub.dialect, ub.whereClauses, &paramIndex)
 	if whereSQL != "" {
 		buf.WriteString(" ")
@@ -140,7 +137,6 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 		args = append(args, whereArgs...)
 	}
 
-	// RETURNING clause (PostgreSQL)
 	if len(ub.returning) > 0 && ub.dialect.Name() == "postgres" {
 		buf.WriteString(" RETURNING ")
 		returningCols := make([]string, len(ub.returning))
@@ -155,7 +151,6 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 	var result sql.Result
 	var err error
 
-	// Use prepared statement cache if available (non-transaction queries)
 	if ub.tx == nil && globalStmtCache != nil && globalStmtCache.db == ub.db {
 		stmt, stmtErr := globalStmtCache.getStmt(ctx, sqlStr)
 		if stmtErr == nil {
@@ -163,11 +158,9 @@ func (ub *UpdateBuilder[T]) Execute(ctx context.Context) (sql.Result, error) {
 			if err == nil {
 				return result, err
 			}
-			// If prepared statement fails, fall back to regular exec
 		}
 	}
 
-	// Fallback to regular exec (for transactions or if cache fails)
 	if ub.tx != nil {
 		result, err = ub.tx.ExecContext(ctx, sqlStr, args...)
 	} else {

@@ -22,6 +22,11 @@ type BenchmarkUser struct {
 	Age   int    `db:"age" gorm:"column:age"`
 }
 
+// TableName returns the table name for BenchmarkUser
+func (BenchmarkUser) TableName() string {
+	return "benchmark_users"
+}
+
 // GORM model
 type GormUser struct {
 	ID    int `gorm:"primaryKey"`
