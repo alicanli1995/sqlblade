@@ -85,6 +85,47 @@ func main() {
 }
 ```
 
+## 🔧 Development
+
+### Local Development Setup
+
+1. **Install dependencies:**
+   ```bash
+   go mod download
+   ```
+
+2. **Install development tools:**
+   ```bash
+   make install-tools
+   ```
+
+3. **Run linters locally:**
+   ```bash
+   make lint
+   ```
+
+4. **Run tests:**
+   ```bash
+   make test
+   ```
+
+5. **Run all checks (lint + test):**
+   ```bash
+   make check
+   ```
+
+### Available Make Commands
+
+- `make lint` - Run golangci-lint
+- `make lint-fix` - Run golangci-lint with auto-fix
+- `make test` - Run tests with race detection
+- `make build` - Build the project
+- `make build-examples` - Build example programs
+- `make fmt` - Format code with gofmt
+- `make clean` - Clean build artifacts
+- `make check` - Run lint + test
+- `make install-tools` - Install golangci-lint
+
 ## 📚 Examples
 
 See [examples/](examples/) directory for complete examples:

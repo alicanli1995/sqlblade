@@ -1,4 +1,5 @@
 # golangci-lint Configuration
+version: 2
 
 linters:
   # Enable all linters
@@ -23,7 +24,6 @@ linters:
     - perfsprint       # fmt.Sprintf is fine for readability
     - prealloc         # Pre-allocation is optional optimization
     - sqlclosecheck    # Prepared statements are cached, don't close
-    - stylecheck       # Package comments are optional
     - varnamelen       # Short variable names are fine for local scope
     - wsl              # Whitespace linter is too strict
     - depguard         # Allow internal imports
@@ -33,7 +33,6 @@ linters:
     - gocritic         # Too opinionated
     - ireturn          # Generic interfaces are acceptable
     - cyclop           # Keep gocyclo instead
-    - gofumpt          # Use gofmt instead
     - mnd              # Magic numbers are acceptable with constants
 
 linters-settings:
@@ -115,8 +114,7 @@ run:
   tests: true
 
 output:
-  formats:
-    - format: colored-line-number
+  format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
 
