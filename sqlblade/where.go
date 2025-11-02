@@ -3,7 +3,7 @@ package sqlblade
 import (
 	"strings"
 
-	"github.com/alicanli1995/sqlblade/dialect"
+	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
 
 // WhereClause represents a WHERE condition

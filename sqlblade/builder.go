@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/alicanli1995/sqlblade/dialect"
+	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
 
 // QueryBuilder is the main query builder struct

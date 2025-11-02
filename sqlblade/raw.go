@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/alicanli1995/sqlblade/dialect"
+	"github.com/alicanli1995/sqlblade/sqlblade/dialect"
 )
 
 // RawQuery executes a raw SQL query

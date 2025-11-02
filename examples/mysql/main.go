@@ -24,7 +24,7 @@ type User struct {
 }
 
 func main() {
-	// Connect to database
+	// Connect to MySQL database
 	db, err := sql.Open("mysql", "user:password@tcp(localhost:3306)/mydb")
 	if err != nil {
 		log.Fatal(err)
