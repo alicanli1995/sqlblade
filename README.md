@@ -18,7 +18,7 @@
 ## ✨ Features
 
 - 🎯 **Type-Safe**: Compile-time type checking with Go generics
-- ⚡ **Zero Reflection at Runtime**: Type information cached at compile-time
+- ⚡ **Minimal Reflection Overhead**: Type information cached after first use, subsequent queries use cached metadata
 - 🚀 **High Performance**: Zero-allocation string building with `strings.Builder`
 - 🗄️ **Multi-Database**: PostgreSQL, MySQL, SQLite support
 - 🔧 **Full SQL Support**: SELECT, INSERT, UPDATE, DELETE, JOIN, Transactions
